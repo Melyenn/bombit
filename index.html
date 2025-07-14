@@ -102,11 +102,11 @@
     button:hover {
       background-color: #0cc;
     }
-    .touch-controls {
+    #touch-controls {
       position: absolute;
       bottom: 10px;
       width: 100%;
-      display: block;
+      display: none;
       justify-content: space-between;
       align-items: center;
       padding: 0 20px;
@@ -181,7 +181,7 @@
       <p style="font-size: 12px; color: #888">4 Player Battle</p>
     </div>
     <div class="game-container">
-      <div class="touch-controls">
+      <div id="touch-controls">
         <div class="d-pad">
           <div id="touchUp" class="touch-btn">↑</div>
           <div id="touchLeft" class="touch-btn">←</div>
@@ -647,6 +647,7 @@
       initPlayer();
       document.getElementById("startScreen").style.display = "none";
       document.getElementById("gameOverScreen").style.display = "none";
+      document.getElementById("touch-controls").style.display = "block";
       document.getElementById("level").textContent = level;
       gameState = "playing";
       const bgm = document.getElementById("bgm");
