@@ -41,7 +41,7 @@
     .game-container {
       position: relative;
       width: 100%;
-      aspect-ratio: 8 / 13; /* Match grid ratio COLS:ROWS */
+      aspect-ratio: 8 / 13;
       background: #000;
       overflow: hidden;
       border-radius: 0 0 10px 0;
@@ -98,6 +98,7 @@
       border-radius: 8px;
       cursor: pointer;
       transition: background-color 0.2s ease-in-out;
+      margin: .75rem;
     }
     button:hover {
       background-color: #0cc;
@@ -105,7 +106,7 @@
     #touch-controls {
       position: absolute;
       bottom: 10px;
-      width: 100%;
+      width: 90%;
       display: none;
       justify-content: space-between;
       align-items: center;
@@ -153,17 +154,12 @@
       background: rgba(255, 50, 50, 0.8);
       box-shadow: 0 0 15px #f00;
     }
-    @media (max-width: 768px) {
-      .touch-controls {
-        display: flex;
-      }
-    }
   </style>
 </head>
 <body>
   <!-- Audio -->
   <audio id="bgm" src="https://cdn.jsdelivr.net/gh/Melyenn/pikachumatch@main/audio/music.mp3" loop preload="auto"></audio>
-  <audio id="boom" src="https://cdn.jsdelivr.net/gh/Melyenn/pikachumatch@main/audio/lv.mp3" preload="auto"></audio>
+  <audio id="boom" src="audio/explosion.mp3" preload="auto"></audio>
 
   <!-- Hidden Images (Preload) -->
   <img id="playerImg" src="img/player.png" style="display: none">
@@ -199,7 +195,13 @@
         AI3: <span id="ai3Score">0</span> |
         High: <span id="highScore">0</span>
       </div>
-      <div id="startScreen" class="screen">
+      <div id="deviceScreen" class="screen" style="display:block">
+        <h1>BOMB IT</h1>
+        <p>Are you playing on a phone or computer?</p>
+        <button onclick="selectDevice('phone')">Phone</button>
+        <button onclick="selectDevice('computer')">Computer</button>
+      </div>
+      <div id="startScreen" class="screen" style="display:none">
         <h1>BOMB IT</h1>
         <p>Arrow keys or D-pad to move</p>
         <p>Space or bomb button to plant bomb</p>
@@ -221,11 +223,18 @@
   <script>
     const COLS = 8, ROWS = 13, TILE_SIZE = 60, BASE_BOMB_TIMER = 120, EXPLOSION_DURATION = 30, EXPLOSION_RANGE = 2;
     const canvas = document.getElementById("gameCanvas"), ctx = canvas.getContext("2d");
-    canvas.width = COLS * TILE_SIZE; // 8 * 60 = 480
-    canvas.height = ROWS * TILE_SIZE; // 13 * 60 = 780
+    canvas.width = COLS * TILE_SIZE;
+    canvas.height = ROWS * TILE_SIZE;
 
-    let grid, player, aiPlayers = [], bombs, explosions, lives = 3, score = 0, aiScores = [0, 0, 0], gameState = "start", level = 1;
+    let grid, player, aiPlayers = [], bombs, explosions, lives = 3, score = 0, aiScores = [0, 0, 0], gameState = "device", level = 1;
     let moveInterval = null;
+    let isPhone = false;
+
+    // Ensure initial screen states
+    document.getElementById("deviceScreen").style.display = "block";
+    document.getElementById("startScreen").style.display = "none";
+    document.getElementById("gameOverScreen").style.display = "none";
+    document.getElementById("touch-controls").style.display = "none";
 
     function cellFree(x, y) { 
       return grid[y] && grid[y][x] === 0 && !bombAt(x, y) && !playerAt(x, y); 
@@ -247,10 +256,10 @@
           } else if (Math.random() < blockDensity) grid[y][x] = 2;
         }
       }
-      grid[1][1] = grid[1][2] = grid[2][1] = 0; // Player (top-left)
-      grid[ROWS-2][COLS-2] = grid[ROWS-2][COLS-3] = grid[ROWS-3][COLS-2] = 0; // AI1 (bottom-right)
-      grid[1][COLS-2] = grid[1][COLS-3] = grid[2][COLS-2] = 0; // AI2 (top-right)
-      grid[ROWS-2][1] = grid[ROWS-2][2] = grid[ROWS-3][1] = 0; // AI3 (bottom-left)
+      grid[1][1] = grid[1][2] = grid[2][1] = 0;
+      grid[ROWS-2][COLS-2] = grid[ROWS-2][COLS-3] = grid[ROWS-3][COLS-2] = 0;
+      grid[1][COLS-2] = grid[1][COLS-3] = grid[2][COLS-2] = 0;
+      grid[ROWS-2][1] = grid[ROWS-2][2] = grid[ROWS-3][1] = 0;
     }
 
     function initPlayer() { 
@@ -291,7 +300,6 @@
     }
 
     function triggerExplosion(bomb) {
-      document.getElementById("boom").play().catch(e => console.error("Explosion sound failed:", e));
       const cells = [{ x: bomb.x, y: bomb.y }];
       const dirs = [{ dx: 1, dy: 0 }, { dx: -1, dy: 0 }, { dx: 0, dy: 1 }, { dx: 0, dy: -1 }];
       for (const { dx, dy } of dirs) {
@@ -436,12 +444,15 @@
       tickExplosions();
       
       if (explosionAt(player.x, player.y)) {
+        document.getElementById("boom").play().catch(e => console.error("Explosion sound failed:", e));
+
         if (lives <= 0) endGame();
         else {
           player.x = 1;
           player.y = 1;
         }
         lives--;
+
       }
       
       aiPlayers.forEach((ai, index) => {
@@ -582,42 +593,43 @@
           player.x = nx;
           player.y = ny;
         }
-      }, 100); // Move every 100ms while held
+      }, 50);
     }
 
     function stopMove() {
       clearInterval(moveInterval);
     }
 
-    touchUp.addEventListener("touchstart", (e) => {
+    function handleTouchStart(e, direction) {
       e.preventDefault();
-      startMove("up");
-    });
-    touchUp.addEventListener("touchend", stopMove);
+      startMove(direction);
+    }
 
-    touchDown.addEventListener("touchstart", (e) => {
-      e.preventDefault();
-      startMove("down");
-    });
-    touchDown.addEventListener("touchend", stopMove);
-
-    touchLeft.addEventListener("touchstart", (e) => {
-      e.preventDefault();
-      startMove("left");
-    });
-    touchLeft.addEventListener("touchend", stopMove);
-
-    touchRight.addEventListener("touchstart", (e) => {
-      e.preventDefault();
-      startMove("right");
-    });
-    touchRight.addEventListener("touchend", stopMove);
-
-    touchBomb.addEventListener("touchstart", (e) => {
+    function handleTouchBomb(e) {
       e.preventDefault();
       if (gameState !== "playing") return;
       placeBomb(player, -1);
-    });
+    }
+
+    touchUp.addEventListener("touchstart", (e) => handleTouchStart(e, "up"));
+    touchUp.addEventListener("touchend", stopMove);
+    touchUp.addEventListener("touchcancel", stopMove);
+
+    touchDown.addEventListener("touchstart", (e) => handleTouchStart(e, "down"));
+    touchDown.addEventListener("touchend", stopMove);
+    touchDown.addEventListener("touchcancel", stopMove);
+
+    touchLeft.addEventListener("touchstart", (e) => handleTouchStart(e, "left"));
+    touchLeft.addEventListener("touchend", stopMove);
+    touchLeft.addEventListener("touchcancel", stopMove);
+
+    touchRight.addEventListener("touchstart", (e) => handleTouchStart(e, "right"));
+    touchRight.addEventListener("touchend", stopMove);
+    touchRight.addEventListener("touchcancel", stopMove);
+
+    touchBomb.addEventListener("touchstart", handleTouchBomb);
+    touchBomb.addEventListener("touchend", (e) => e.preventDefault());
+    touchBomb.addEventListener("touchcancel", (e) => e.preventDefault());
 
     document.addEventListener("keydown", e => {
       if (gameState === "start" && e.key === "Enter") return startGame();
@@ -636,6 +648,13 @@
       }
     });
 
+    function selectDevice(device) {
+      isPhone = device === 'phone';
+      document.getElementById("deviceScreen").style.display = "none";
+      document.getElementById("startScreen").style.display = "block";
+      gameState = "start";
+    }
+
     function startGame() {
       score = 0;
       aiScores = [0, 0, 0];
@@ -647,7 +666,9 @@
       initPlayer();
       document.getElementById("startScreen").style.display = "none";
       document.getElementById("gameOverScreen").style.display = "none";
-      document.getElementById("touch-controls").style.display = "block";
+      if (isPhone) {
+        document.getElementById("touch-controls").style.display = "flex";
+      }
       document.getElementById("level").textContent = level;
       gameState = "playing";
       const bgm = document.getElementById("bgm");
@@ -659,7 +680,6 @@
     function endGame() {
       gameState = "gameover";
       document.getElementById("touch-controls").style.display = "none";
-
       const highScore = localStorage.getItem("highScore") || 0;
       if (score > highScore) localStorage.setItem("highScore", score);
       document.getElementById("finalLevel").textContent = level;
@@ -686,7 +706,11 @@
 
     function restart() {
       if (gameState !== "gameover") return;
-      startGame();
+      document.getElementById("gameOverScreen").style.display = "none";
+      document.getElementById("deviceScreen").style.display = "block";
+      document.getElementById("startScreen").style.display = "none";
+      document.getElementById("touch-controls").style.display = "none";
+      gameState = "device";
     }
 
     function resizeCanvas() {
@@ -731,7 +755,14 @@
       requestAnimationFrame(loop);
     });
 
-    window.FarcadeSDK?.on?.("play_again", () => startGame());
+    window.FarcadeSDK?.on?.("play_again", () => {
+      document.getElementById("gameOverScreen").style.display = "none";
+      document.getElementById("deviceScreen").style.display = "block";
+      document.getElementById("startScreen").style.display = "none";
+      document.getElementById("touch-controls").style.display = "none";
+      gameState = "device";
+    });
+
     window.FarcadeSDK?.on?.("toggle_mute", () => {
       const bgm = document.getElementById("bgm");
       if (bgm) bgm.muted = !bgm.muted;
