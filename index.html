@@ -1,781 +1,920 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bomb It – Mini App</title>
-  <script src="https://unpkg.com/@farcade/game-sdk@latest/dist/index.min.js"></script>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      background: #000;
-      font-family: 'Arial', sans-serif;
-    }
-    .emulator-frame {
-      position: relative;
-      width: 100%;
-      max-width: 400px;
-      background: #1a1a1a;
-      border-radius: 10px;
-      padding: 1px;
-      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    .emulator-header {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      padding: 6px;
-      color: #fff;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    p {
-      margin: 0;
-    }
-    .game-container {
-      position: relative;
-      width: 100%;
-      aspect-ratio: 8 / 13;
-      background: #000;
-      overflow: hidden;
-      border-radius: 0 0 10px 0;
-    }
-    #gameCanvas {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: #000;
-      border-radius: 0 0 10px 0;
-      image-rendering: pixelated;
-    }
-    #ui {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 60px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 0.5rem;
-      color: #0ff;
-      font-size: 0.9rem;
-      text-shadow: 0 0 10px #0ff;
-      background: rgba(0, 0, 0, 0.8);
-      z-index: 2;
-      flex-wrap: wrap;
-    }
-    .screen {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(0, 0, 0, 0.9);
-      color: #0ff;
-      text-align: center;
-      padding: 20px;
-      width: 80%;
-      border-radius: 10px;
-      z-index: 3;
-      border: 2px solid #0ff;
-      text-shadow: 0 0 10px #0ff;
-      box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
-    }
-    button {
-      font-size: 1rem;
-      padding: 0.25rem 0.75rem;
-      background-color: #0ff;
-      color: #121212;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background-color 0.2s ease-in-out;
-      margin: .75rem;
-    }
-    button:hover {
-      background-color: #0cc;
-    }
-    #touch-controls {
-      position: absolute;
-      bottom: 10px;
-      width: 90%;
-      display: none;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0 20px;
-      z-index: 10;
-    }
-    .d-pad {
-      display: grid;
-      grid-template-areas:
-        ". up ."
-        "left center right"
-        ". down .";
-      gap: 10px;
-    }
-    .touch-btn {
-      width: 70px;
-      height: 70px;
-      background: rgba(0, 255, 255, 0.6);
-      border: 2px solid #0ff;
-      border-radius: 50%;
-      box-shadow: 0 0 10px #0ff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #0ff;
-      font-size: 1.5rem;
-      font-weight: bold;
-      user-select: none;
-      touch-action: manipulation;
-    }
-    .touch-btn:active {
-      background: rgba(0, 255, 255, 0.8);
-      box-shadow: 0 0 15px #0ff;
-    }
-    #touchUp { grid-area: up; }
-    #touchLeft { grid-area: left; }
-    #touchRight { grid-area: right; }
-    #touchDown { grid-area: down; }
-    #touchBomb {
-      border-radius: 10px;
-      background: rgba(255, 50, 50, 0.6);
-      border-color: #f00;
-    }
-    #touchBomb:active {
-      background: rgba(255, 50, 50, 0.8);
-      box-shadow: 0 0 15px #f00;
-    }
-  </style>
-</head>
-<body>
-  <!-- Audio -->
-  <audio id="bgm" src="https://cdn.jsdelivr.net/gh/Melyenn/pikachumatch@main/audio/music.mp3" loop preload="auto"></audio>
-  <audio id="boom" src="audio/explosion.mp3" preload="auto"></audio>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bomb It – Mini App</title>
+    <script src="https://unpkg.com/@farcade/game-sdk@latest/dist/index.min.js"></script>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        background: #000;
+        font-family: "Arial", sans-serif;
+      }
+      .emulator-frame {
+        position: relative;
+        width: 100%;
+        max-width: 400px;
+        background: #1a1a1a;
+        border-radius: 10px;
+        padding: 1px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .emulator-header {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 6px;
+        color: #fff;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      p {
+        margin: 0;
+      }
+      .game-container {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 8 / 13;
+        background: #000;
+        overflow: hidden;
+        border-radius: 0 0 10px 0;
+      }
+      #gameCanvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: #000;
+        border-radius: 0 0 10px 0;
+        image-rendering: pixelated;
+      }
+      #ui {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 60px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 0.5rem;
+        color: #0ff;
+        font-size: 0.9rem;
+        text-shadow: 0 0 10px #0ff;
+        background: rgba(0, 0, 0, 0.8);
+        z-index: 2;
+        flex-wrap: wrap;
+      }
+      .screen {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(0, 0, 0, 0.9);
+        color: #0ff;
+        text-align: center;
+        padding: 20px;
+        width: 80%;
+        border-radius: 10px;
+        z-index: 3;
+        border: 2px solid #0ff;
+        text-shadow: 0 0 10px #0ff;
+        box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+      }
+      button {
+        font-size: 1rem;
+        padding: 0.25rem 0.75rem;
+        background-color: #0ff;
+        color: #121212;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background-color 0.2s ease-in-out;
+        margin: 0.75rem;
+      }
+      button:hover {
+        background-color: #0cc;
+      }
+      #touch-controls {
+        position: absolute;
+        bottom: 10px;
+        width: 90%;
+        display: none;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 20px;
+        z-index: 10;
+      }
+      .d-pad {
+        display: grid;
+        grid-template-areas:
+          ". up ."
+          "left center right"
+          ". down .";
+        gap: 10px;
+      }
+      .touch-btn {
+        width: 70px;
+        height: 70px;
+        background: rgba(0, 255, 255, 0.6);
+        border: 2px solid #0ff;
+        border-radius: 50%;
+        box-shadow: 0 0 10px #0ff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #0ff;
+        font-size: 1.5rem;
+        font-weight: bold;
+        user-select: none;
+        touch-action: manipulation;
+      }
+      .touch-btn:active {
+        background: rgba(0, 255, 255, 0.8);
+        box-shadow: 0 0 15px #0ff;
+      }
+      #touchUp {
+        grid-area: up;
+      }
+      #touchLeft {
+        grid-area: left;
+      }
+      #touchRight {
+        grid-area: right;
+      }
+      #touchDown {
+        grid-area: down;
+      }
+      #touchBomb {
+        border-radius: 10px;
+        background: rgba(255, 50, 50, 0.6);
+        border-color: #f00;
+      }
+      #touchBomb:active {
+        background: rgba(255, 50, 50, 0.8);
+        box-shadow: 0 0 15px #f00;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Audio -->
+    <audio
+      id="bgm"
+      src="https://cdn.jsdelivr.net/gh/Melyenn/pikachumatch@main/audio/music.mp3"
+      loop
+      preload="auto"
+    ></audio>
+    <audio id="boom" src="https://cdn.jsdelivr.net/gh/Melyenn/bombit@main/audio/music.mp3" preload="auto"></audio>
 
-  <!-- Hidden Images (Preload) -->
-  <img id="playerImg" src="img/player.png" style="display: none">
-  <img id="aiplayer1Img" src="img/aiPlayer.png" style="display: none">
-  <img id="aiplayer2Img" src="img/aiPlayer1.png" style="display: none">
-  <img id="aiplayer3Img" src="img/aiPlayer2.png" style="display: none">
-  <img id="wallImg" src="img/wall.png" style="display: none">
-  <img id="blockImg" src="img/block.png" style="display: none">
-  <img id="bombImg" src="img/bomb.png" style="display: none">
-  <img id="fireImg" src="img/fire.png" style="display: none">
+    <!-- Hidden Images (Preload) -->
+    <img id="playerImg" src="https://cdn.jsdelivr.net/gh/Melyenn/bombit@main/img/player.png" style="display: none" />
+    <img
+      id="aiplayer1Img"
+      src="https://cdn.jsdelivr.net/gh/Melyenn/bombit@main/img/aiPlayer.png"
+      style="display: none"
+    />
+    <img
+      id="aiplayer2Img"
+      src="https://cdn.jsdelivr.net/gh/Melyenn/bombit@main/img/aiPlayer1.png"
+      style="display: none"
+    />
+    <img
+      id="aiplayer3Img"
+      src="https://cdn.jsdelivr.net/gh/Melyenn/bombit@main/img/aiPlayer2.png"
+      style="display: none"
+    />
+    <img id="wallImg" src="https://cdn.jsdelivr.net/gh/Melyenn/bombit@main/img/wall.png" style="display: none" />
+    <img id="blockImg" src="https://cdn.jsdelivr.net/gh/Melyenn/bombit@main/img/block.png" style="display: none" />
+    <img id="bombImg" src="https://cdn.jsdelivr.net/gh/Melyenn/bombit@main/img/bomb.png" style="display: none" />
+    <img id="fireImg" src="https://cdn.jsdelivr.net/gh/Melyenn/bombit@main/img/fire.png" style="display: none" />
 
-  <div class="emulator-frame">
-    <div class="emulator-header">
-      <div>BOMB IT</div>
-      <p style="font-size: 12px; color: #888">4 Player Battle</p>
-    </div>
-    <div class="game-container">
-      <div id="touch-controls">
-        <div class="d-pad">
-          <div id="touchUp" class="touch-btn">↑</div>
-          <div id="touchLeft" class="touch-btn">←</div>
-          <div id="touchRight" class="touch-btn">→</div>
-          <div id="touchDown" class="touch-btn">↓</div>
+    <div class="emulator-frame">
+      <div class="emulator-header">
+        <div>BOMB IT</div>
+        <p style="font-size: 12px; color: #888">4 Player Battle</p>
+      </div>
+      <div class="game-container">
+        <div id="touch-controls">
+          <div class="d-pad">
+            <div id="touchUp" class="touch-btn">↑</div>
+            <div id="touchLeft" class="touch-btn">←</div>
+            <div id="touchRight" class="touch-btn">→</div>
+            <div id="touchDown" class="touch-btn">↓</div>
+          </div>
+          <div id="touchBomb" class="touch-btn">💣</div>
         </div>
-        <div id="touchBomb" class="touch-btn">💣</div>
+        <div id="ui">
+          Level: <span id="level">1</span> | Lives: <span id="lives">3</span> | Player: <span id="score">0</span> |
+          Time: <span id="time">0</span>s
+          <p>
+            <!-- | AI1:
+          <!-- <span id="ai1Score">0</span> | AI2: <span id="ai2Score">0</span> | AI3: <span id="ai3Score">0</span>  -->
+            | High:
+            <span id="highScore">0</span>
+          </p>
+        </div>
+        <div id="deviceScreen" class="screen" style="display: block">
+          <h1>BOMB IT</h1>
+          <p>Are you playing on a phone or computer?</p>
+          <button onclick="selectDevice('phone')">Phone</button>
+          <button onclick="selectDevice('computer')">Computer</button>
+        </div>
+        <div id="startScreen" class="screen" style="display: none">
+          <h1>BOMB IT</h1>
+          <p>Arrow keys or D-pad to move</p>
+          <p>Space or bomb button to plant bomb</p>
+          <button onclick="startGame()">Play</button>
+        </div>
+        <div id="gameOverScreen" class="screen" style="display: none">
+          <h1 id="overText">GAME OVER</h1>
+          <p>Level: <span id="finalLevel">1</span></p>
+          <p>Player: <span id="finalScore">0</span></p>
+          <p>Time: <span id="time">0</span>s</p>
+          <p>
+            <!-- <p>
+            AI1: <span id="finalAI1">0</span> | AI2: <span id="finalAI2">0</span> | AI3: <span id="finalAI3">0</span>
+          </p> -->
+          </p>
+
+          <p>High Score: <span id="finalHighScore">0</span></p>
+          <button onclick="restart()">Play Again</button>
+        </div>
+        <canvas id="gameCanvas"></canvas>
       </div>
-      <div id="ui">
-        Level: <span id="level">1</span> |
-        Lives: <span id="lives">3</span> |
-        Player: <span id="score">0</span> |
-        AI1: <span id="ai1Score">0</span> |
-        AI2: <span id="ai2Score">0</span> |
-        AI3: <span id="ai3Score">0</span> |
-        High: <span id="highScore">0</span>
-      </div>
-      <div id="deviceScreen" class="screen" style="display:block">
-        <h1>BOMB IT</h1>
-        <p>Are you playing on a phone or computer?</p>
-        <button onclick="selectDevice('phone')">Phone</button>
-        <button onclick="selectDevice('computer')">Computer</button>
-      </div>
-      <div id="startScreen" class="screen" style="display:none">
-        <h1>BOMB IT</h1>
-        <p>Arrow keys or D-pad to move</p>
-        <p>Space or bomb button to plant bomb</p>
-        <p>4 Player Battle!</p>
-        <button onclick="startGame()">Play</button>
-      </div>
-      <div id="gameOverScreen" class="screen" style="display:none">
-        <h1 id="overText">GAME OVER</h1>
-        <p>Level: <span id="finalLevel">1</span></p>
-        <p>Player: <span id="finalScore">0</span></p>
-        <p>AI1: <span id="finalAI1">0</span> | AI2: <span id="finalAI2">0</span> | AI3: <span id="finalAI3">0</span></p>
-        <p>High Score: <span id="finalHighScore">0</span></p>
-        <button onclick="restart()">Play Again</button>
-      </div>
-      <canvas id="gameCanvas"></canvas>
     </div>
-  </div>
 
-  <script>
-    const COLS = 8, ROWS = 13, TILE_SIZE = 60, BASE_BOMB_TIMER = 120, EXPLOSION_DURATION = 30, EXPLOSION_RANGE = 2;
-    const canvas = document.getElementById("gameCanvas"), ctx = canvas.getContext("2d");
-    canvas.width = COLS * TILE_SIZE;
-    canvas.height = ROWS * TILE_SIZE;
+    <script>
+      const COLS = 8,
+        ROWS = 13,
+        TILE_SIZE = 60,
+        BASE_BOMB_TIMER = 120,
+        EXPLOSION_DURATION = 30,
+        EXPLOSION_RANGE = 2;
+      const canvas = document.getElementById("gameCanvas"),
+        ctx = canvas.getContext("2d");
+      canvas.width = COLS * TILE_SIZE;
+      canvas.height = ROWS * TILE_SIZE;
 
-    let grid, player, aiPlayers = [], bombs, explosions, lives = 3, score = 0, aiScores = [0, 0, 0], gameState = "device", level = 1;
-    let moveInterval = null;
-    let isPhone = false;
+      let timeLeft = 60;
+      const timeDisplay = document.getElementById("time");
+      let grid,
+        player,
+        aiPlayers = [],
+        bombs,
+        explosions,
+        lives = 3,
+        score = 0,
+        aiScores = [0, 0, 0],
+        gameState = "device",
+        level = 1;
+      let moveInterval = null;
+      let isPhone = false;
 
-    // Ensure initial screen states
-    document.getElementById("deviceScreen").style.display = "block";
-    document.getElementById("startScreen").style.display = "none";
-    document.getElementById("gameOverScreen").style.display = "none";
-    document.getElementById("touch-controls").style.display = "none";
+      // Ensure initial screen states
+      document.getElementById("deviceScreen").style.display = "block";
+      document.getElementById("startScreen").style.display = "none";
+      document.getElementById("gameOverScreen").style.display = "none";
+      document.getElementById("touch-controls").style.display = "none";
 
-    function cellFree(x, y) { 
-      return grid[y] && grid[y][x] === 0 && !bombAt(x, y) && !playerAt(x, y); 
-    }
-    function bombAt(x, y) { return bombs.some(b => b.x === x && b.y === y); }
-    function explosionAt(x, y) { return explosions.some(ex => ex.x === x && ex.y === y); }
-    function playerAt(x, y) { 
-      if (player.x === x && player.y === y) return true;
-      return aiPlayers.some(ai => ai.x === x && ai.y === y);
-    }
-
-    function buildLevel() {
-      grid = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
-      const blockDensity = Math.min(0.4 + (level - 1) * 0.05, 0.7);
-      for (let y = 0; y < ROWS; y++) {
-        for (let x = 0; x < COLS; x++) {
-          if (y === 0 || y === ROWS - 1 || x === 0 || x === COLS - 1 || (x % 2 === 0 && y % 2 === 0)) {
-            grid[y][x] = 1;
-          } else if (Math.random() < blockDensity) grid[y][x] = 2;
-        }
+      function cellFree(x, y) {
+        return grid[y] && grid[y][x] === 0 && !bombAt(x, y) && !playerAt(x, y);
       }
-      grid[1][1] = grid[1][2] = grid[2][1] = 0;
-      grid[ROWS-2][COLS-2] = grid[ROWS-2][COLS-3] = grid[ROWS-3][COLS-2] = 0;
-      grid[1][COLS-2] = grid[1][COLS-3] = grid[2][COLS-2] = 0;
-      grid[ROWS-2][1] = grid[ROWS-2][2] = grid[ROWS-3][1] = 0;
-    }
-
-    function initPlayer() { 
-      player = { x: 1, y: 1 };
-      const aiMoveSpeed = Math.max(10, 15 - level);
-      aiPlayers = [
-        { x: COLS-2, y: ROWS-2, moveTimer: 0, bombTimer: 0, target: null, id: 0, alive: true },
-        { x: COLS-2, y: 1, moveTimer: 0, bombTimer: 0, target: null, id: 1, alive: true },
-        { x: 1, y: ROWS-2, moveTimer: 0, bombTimer: 0, target: null, id: 2, alive: true }
-      ];
-    }
-
-    function placeBomb(playerObj, aiId = -1) {
-      if (bombAt(playerObj.x, playerObj.y)) return;
-      const bombTimer = Math.max(80, BASE_BOMB_TIMER - (level - 1) * 5);
-      bombs.push({ x: playerObj.x, y: playerObj.y, timer: bombTimer, owner: aiId >= 0 ? aiId : 'player' });
-    }
-
-    function checkWin() {
-      for (let y = 0; y < ROWS; y++) {
-        for (let x = 0; x < COLS; x++) {
-          if (grid[y][x] === 2) return false;
-        }
+      function bombAt(x, y) {
+        return bombs.some((b) => b.x === x && b.y === y);
       }
-      return true;
-    }
+      function explosionAt(x, y) {
+        return explosions.some((ex) => ex.x === x && ex.y === y);
+      }
+      function playerAt(x, y) {
+        if (player.x === x && player.y === y) return true;
+        return aiPlayers.some((ai) => ai.x === x && ai.y === y);
+      }
 
-    function levelUp() {
-      level++;
-      bombs = [];
-      explosions = [];
-      buildLevel();
-      initPlayer();
-      document.getElementById("level").textContent = level;
-      const bgm = document.getElementById("bgm");
-      bgm.currentTime = 3;
-      bgm.play().catch(e => console.error("Background music failed:", e));
-    }
-
-    function triggerExplosion(bomb) {
-      const cells = [{ x: bomb.x, y: bomb.y }];
-      const dirs = [{ dx: 1, dy: 0 }, { dx: -1, dy: 0 }, { dx: 0, dy: 1 }, { dx: 0, dy: -1 }];
-      for (const { dx, dy } of dirs) {
-        for (let i = 1; i <= EXPLOSION_RANGE; i++) {
-          const nx = bomb.x + dx * i, ny = bomb.y + dy * i;
-          if (nx < 0 || nx >= COLS || ny < 0 || ny >= ROWS || grid[ny][nx] === 1) break;
-          cells.push({ x: nx, y: ny });
-          if (grid[ny][nx] === 2) {
-            grid[ny][nx] = 0;
-            if (typeof bomb.owner === 'number') {
-              aiScores[bomb.owner] += 10;
-            } else {
-              score += 10;
-            }
-            break;
+      function buildLevel() {
+        grid = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+        const blockDensity = Math.min(0.4 + (level - 1) * 0.05, 0.7);
+        for (let y = 0; y < ROWS; y++) {
+          for (let x = 0; x < COLS; x++) {
+            if (y === 0 || y === ROWS - 1 || x === 0 || x === COLS - 1 || (x % 2 === 0 && y % 2 === 0)) {
+              grid[y][x] = 1;
+            } else if (Math.random() < blockDensity) grid[y][x] = 2;
           }
         }
+        grid[1][1] = grid[1][2] = grid[2][1] = 0;
+        grid[ROWS - 2][COLS - 2] = grid[ROWS - 2][COLS - 3] = grid[ROWS - 3][COLS - 2] = 0;
+        grid[1][COLS - 2] = grid[1][COLS - 3] = grid[2][COLS - 2] = 0;
+        grid[ROWS - 2][1] = grid[ROWS - 2][2] = grid[ROWS - 3][1] = 0;
       }
-      explosions.push(...cells.map(c => ({ ...c, timer: EXPLOSION_DURATION })));
-    }
 
-    function isSafePath(x, y) {
-      for (const bomb of bombs) {
-        const dist = Math.abs(bomb.x - x) + Math.abs(bomb.y - y);
-        if (dist <= EXPLOSION_RANGE && bomb.timer < 60) {
-          return false;
+      function initPlayer() {
+        player = { x: 1, y: 1 };
+        const aiMoveSpeed = Math.max(10, 15 - level);
+        aiPlayers = [
+          { x: COLS - 2, y: ROWS - 2, moveTimer: 0, bombTimer: 0, target: null, id: 0, alive: true },
+          { x: COLS - 2, y: 1, moveTimer: 0, bombTimer: 0, target: null, id: 1, alive: true },
+          { x: 1, y: ROWS - 2, moveTimer: 0, bombTimer: 0, target: null, id: 2, alive: true },
+        ];
+      }
+
+      function placeBomb(playerObj, aiId = -1) {
+        if (bombAt(playerObj.x, playerObj.y)) return;
+        const bombTimer = Math.max(80, BASE_BOMB_TIMER - (level - 1) * 5);
+        bombs.push({ x: playerObj.x, y: playerObj.y, timer: bombTimer, owner: aiId >= 0 ? aiId : "player" });
+      }
+
+      function checkWin() {
+        for (let y = 0; y < ROWS; y++) {
+          for (let x = 0; x < COLS; x++) {
+            if (grid[y][x] === 2) return false;
+          }
         }
+        return true;
       }
-      if (explosionAt(x, y)) return false;
-      return true;
-    }
 
-    function getValidMoves(x, y) {
-      const moves = [];
-      const dirs = [{ dx: 0, dy: 0 }, { dx: 1, dy: 0 }, { dx: -1, dy: 0 }, { dx: 0, dy: 1 }, { dx: 0, dy: -1 }];
-      for (const { dx, dy } of dirs) {
-        const nx = x + dx, ny = y + dy;
-        if (nx >= 0 && nx < COLS && ny >= 0 && ny < ROWS && cellFree(nx, ny)) {
-          moves.push({ x: nx, y: ny });
-        }
+      function levelUp() {
+        level++;
+        bombs = [];
+        explosions = [];
+        buildLevel();
+        initPlayer();
+        document.getElementById("level").textContent = level;
+        const bgm = document.getElementById("bgm");
+        bgm.currentTime = 3;
+        bgm.play().catch((e) => console.error("Background music failed:", e));
       }
-      return moves;
-    }
 
-    function updateAI() {
-      if (gameState !== "playing") return;
-      
-      const aiMoveSpeed = Math.max(10, 15 - level);
-      aiPlayers.forEach((ai, index) => {
-        if (!ai.alive) return;
-        
-        ai.moveTimer--;
-        ai.bombTimer--;
-        
-        if (ai.moveTimer <= 0) {
-          ai.moveTimer = aiMoveSpeed + Math.random() * 10 + index * 3;
-          
-          let shouldEscape = false;
-          for (const bomb of bombs) {
-            const dist = Math.abs(bomb.x - ai.x) + Math.abs(bomb.y - ai.y);
-            if (dist <= EXPLOSION_RANGE && bomb.timer < 80) {
-              shouldEscape = true;
+      function triggerExplosion(bomb) {
+        const cells = [{ x: bomb.x, y: bomb.y }];
+        const dirs = [
+          { dx: 1, dy: 0 },
+          { dx: -1, dy: 0 },
+          { dx: 0, dy: 1 },
+          { dx: 0, dy: -1 },
+        ];
+        for (const { dx, dy } of dirs) {
+          for (let i = 1; i <= EXPLOSION_RANGE; i++) {
+            const nx = bomb.x + dx * i,
+              ny = bomb.y + dy * i;
+            if (nx < 0 || nx >= COLS || ny < 0 || ny >= ROWS || grid[ny][nx] === 1) break;
+            cells.push({ x: nx, y: ny });
+            if (grid[ny][nx] === 2) {
+              grid[ny][nx] = 0;
+              if (typeof bomb.owner === "number") {
+                aiScores[bomb.owner] += 10;
+              } else {
+                score += 10;
+              }
               break;
             }
           }
-          
-          if (shouldEscape) {
-            const validMoves = getValidMoves(ai.x, ai.y);
-            const safeMoves = validMoves.filter(move => isSafePath(move.x, move.y));
-            if (safeMoves.length > 0) {
-              const move = safeMoves[Math.floor(Math.random() * safeMoves.length)];
-              ai.x = move.x;
-              ai.y = move.y;
-              ai.target = null;
+        }
+        explosions.push(...cells.map((c) => ({ ...c, timer: EXPLOSION_DURATION })));
+      }
+
+      function isSafePath(x, y) {
+        for (const bomb of bombs) {
+          const dist = Math.abs(bomb.x - x) + Math.abs(bomb.y - y);
+          if (dist <= EXPLOSION_RANGE && bomb.timer < 60) {
+            return false;
+          }
+        }
+        if (explosionAt(x, y)) return false;
+        return true;
+      }
+
+      function getValidMoves(x, y) {
+        const moves = [];
+        const dirs = [
+          { dx: 0, dy: 0 },
+          { dx: 1, dy: 0 },
+          { dx: -1, dy: 0 },
+          { dx: 0, dy: 1 },
+          { dx: 0, dy: -1 },
+        ];
+        for (const { dx, dy } of dirs) {
+          const nx = x + dx,
+            ny = y + dy;
+          if (nx >= 0 && nx < COLS && ny >= 0 && ny < ROWS && cellFree(nx, ny)) {
+            moves.push({ x: nx, y: ny });
+          }
+        }
+        return moves;
+      }
+
+      function updateAI() {
+        if (gameState !== "playing") return;
+
+        const aiMoveSpeed = Math.max(10, 15 - level);
+        aiPlayers.forEach((ai, index) => {
+          if (!ai.alive) return;
+
+          ai.moveTimer--;
+          ai.bombTimer--;
+
+          if (ai.moveTimer <= 0) {
+            ai.moveTimer = aiMoveSpeed + Math.random() * 10 + index * 3;
+
+            let shouldEscape = false;
+            for (const bomb of bombs) {
+              const dist = Math.abs(bomb.x - ai.x) + Math.abs(bomb.y - ai.y);
+              if (dist <= EXPLOSION_RANGE && bomb.timer < 80) {
+                shouldEscape = true;
+                break;
+              }
             }
-          } else {
-            ai.target = { x: player.x, y: player.y };
-            
-            if (ai.target) {
-              const dx = ai.target.x - ai.x;
-              const dy = ai.target.y - ai.y;
-              const distToPlayer = Math.abs(dx) + Math.abs(dy);
-              
-              if (distToPlayer <= 2 && ai.bombTimer <= 0 && isSafePath(ai.x, ai.y)) {
-                placeBomb(ai, ai.id);
-                ai.bombTimer = 50 + Math.random() * 30;
-                const validMoves = getValidMoves(ai.x, ai.y);
-                const safeMoves = validMoves.filter(move => isSafePath(move.x, move.y));
-                if (safeMoves.length > 0) {
-                  const move = safeMoves[Math.floor(Math.random() * safeMoves.length)];
-                  ai.x = move.x;
-                  ai.y = move.y;
-                }
-              } else {
-                let newX = ai.x, newY = ai.y;
-                
-                if (Math.random() < 0.8) {
-                  if (Math.abs(dx) > Math.abs(dy)) {
-                    newX += dx > 0 ? 1 : -1;
-                  } else if (dy !== 0) {
-                    newY += dy > 0 ? 1 : -1;
+
+            if (shouldEscape) {
+              const validMoves = getValidMoves(ai.x, ai.y);
+              const safeMoves = validMoves.filter((move) => isSafePath(move.x, move.y));
+              if (safeMoves.length > 0) {
+                const move = safeMoves[Math.floor(Math.random() * safeMoves.length)];
+                ai.x = move.x;
+                ai.y = move.y;
+                ai.target = null;
+              }
+            } else {
+              ai.target = { x: player.x, y: player.y };
+
+              if (ai.target) {
+                const dx = ai.target.x - ai.x;
+                const dy = ai.target.y - ai.y;
+                const distToPlayer = Math.abs(dx) + Math.abs(dy);
+
+                if (distToPlayer <= 2 && ai.bombTimer <= 0 && isSafePath(ai.x, ai.y)) {
+                  placeBomb(ai, ai.id);
+                  ai.bombTimer = 50 + Math.random() * 30;
+                  const validMoves = getValidMoves(ai.x, ai.y);
+                  const safeMoves = validMoves.filter((move) => isSafePath(move.x, move.y));
+                  if (safeMoves.length > 0) {
+                    const move = safeMoves[Math.floor(Math.random() * safeMoves.length)];
+                    ai.x = move.x;
+                    ai.y = move.y;
                   }
                 } else {
-                  const dirs = [{ dx: 1, dy: 0 }, { dx: -1, dy: 0 }, { dx: 0, dy: 1 }, { dx: 0, dy: -1 }];
-                  const randomDir = dirs[Math.floor(Math.random() * dirs.length)];
-                  newX += randomDir.dx;
-                  newY += randomDir.dy;
-                }
-                
-                if (newX >= 0 && newX < COLS && newY >= 0 && newY < ROWS && cellFree(newX, newY) && isSafePath(newX, newY)) {
-                  ai.x = newX;
-                  ai.y = newY;
+                  let newX = ai.x,
+                    newY = ai.y;
+
+                  if (Math.random() < 0.8) {
+                    if (Math.abs(dx) > Math.abs(dy)) {
+                      newX += dx > 0 ? 1 : -1;
+                    } else if (dy !== 0) {
+                      newY += dy > 0 ? 1 : -1;
+                    }
+                  } else {
+                    const dirs = [
+                      { dx: 1, dy: 0 },
+                      { dx: -1, dy: 0 },
+                      { dx: 0, dy: 1 },
+                      { dx: 0, dy: -1 },
+                    ];
+                    const randomDir = dirs[Math.floor(Math.random() * dirs.length)];
+                    newX += randomDir.dx;
+                    newY += randomDir.dy;
+                  }
+
+                  if (
+                    newX >= 0 &&
+                    newX < COLS &&
+                    newY >= 0 &&
+                    newY < ROWS &&
+                    cellFree(newX, newY) &&
+                    isSafePath(newX, newY)
+                  ) {
+                    ai.x = newX;
+                    ai.y = newY;
+                  }
                 }
               }
             }
           }
+        });
+      }
+
+      function tickBombs() {
+        for (const bomb of bombs) {
+          bomb.timer--;
+          if (bomb.timer === 0) triggerExplosion(bomb);
         }
-      });
-    }
-
-    function tickBombs() {
-      for (const bomb of bombs) {
-        bomb.timer--;
-        if (bomb.timer === 0) triggerExplosion(bomb);
+        bombs = bombs.filter((b) => b.timer > 0);
       }
-      bombs = bombs.filter(b => b.timer > 0);
-    }
 
-    function tickExplosions() {
-      explosions.forEach(ex => ex.timer--);
-      explosions = explosions.filter(ex => ex.timer > 0);
-      if (checkWin()) {
-        levelUp();
-      }
-    }
-
-    function update() {
-      if (gameState !== "playing") return;
-      
-      updateAI();
-      tickBombs();
-      tickExplosions();
-      
-      if (explosionAt(player.x, player.y)) {
-        document.getElementById("boom").play().catch(e => console.error("Explosion sound failed:", e));
-
-        if (lives <= 0) endGame();
-        else {
-          player.x = 1;
-          player.y = 1;
+      function tickExplosions() {
+        explosions.forEach((ex) => ex.timer--);
+        explosions = explosions.filter((ex) => ex.timer > 0);
+        if (checkWin()) {
+          levelUp();
         }
-        lives--;
-
       }
-      
-      aiPlayers.forEach((ai, index) => {
-        if (ai.alive && explosionAt(ai.x, ai.y)) {
-          ai.alive = false;
-          setTimeout(() => {
-            if (gameState === "playing") {
-              ai.alive = true;
-              switch(index) {
-                case 0: ai.x = COLS - 2; ai.y = ROWS - 2; break;
-                case 1: ai.x = COLS - 2; ai.y = 1; break;
-                case 2: ai.x = 1; ai.y = ROWS - 2; break;
+
+      function update() {
+        if (gameState !== "playing") return;
+
+        updateAI();
+        tickBombs();
+        tickExplosions();
+
+        if (explosionAt(player.x, player.y)) {
+          document
+            .getElementById("boom")
+            .play()
+            .catch((e) => console.error("Explosion sound failed:", e));
+
+          if (lives <= 0) endGame();
+          else {
+            player.x = 1;
+            player.y = 1;
+          }
+          lives--;
+        }
+
+        aiPlayers.forEach((ai, index) => {
+          if (ai.alive && explosionAt(ai.x, ai.y)) {
+            ai.alive = false;
+            setTimeout(() => {
+              if (gameState === "playing") {
+                ai.alive = true;
+                switch (index) {
+                  case 0:
+                    ai.x = COLS - 2;
+                    ai.y = ROWS - 2;
+                    break;
+                  case 1:
+                    ai.x = COLS - 2;
+                    ai.y = 1;
+                    break;
+                  case 2:
+                    ai.x = 1;
+                    ai.y = ROWS - 2;
+                    break;
+                }
               }
-            }
-          }, 3000);
-        }
-      });
-      
-      document.getElementById("lives").textContent = lives;
-      document.getElementById("score").textContent = score;
-      document.getElementById("ai1Score").textContent = aiScores[0];
-      document.getElementById("ai2Score").textContent = aiScores[1];
-      document.getElementById("ai3Score").textContent = aiScores[2];
-      document.getElementById("level").textContent = level;
-      document.getElementById("highScore").textContent = Math.max(score, localStorage.getItem("highScore") || 0);
-    }
+            }, 3000);
+          }
+        });
 
-    function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const playerImg = document.getElementById("playerImg");
-      const wallImg = document.getElementById("wallImg");
-      const blockImg = document.getElementById("blockImg");
-      const bombImg = document.getElementById("bombImg");
-      const fireImg = document.getElementById("fireImg");
+        document.getElementById("lives").textContent = lives;
+        document.getElementById("score").textContent = score;
+        // document.getElementById("ai1Score").textContent = aiScores[0];
+        // document.getElementById("ai2Score").textContent = aiScores[1];
+        // document.getElementById("ai3Score").textContent = aiScores[2];
+        document.getElementById("level").textContent = level;
+        document.getElementById("highScore").textContent = Math.max(score, localStorage.getItem("highScore") || 0);
+      }
 
-      for (let y = 0; y < ROWS; y++) {
-        for (let x = 0; x < COLS; x++) {
-          const cell = grid[y][x];
-          if (cell === 1) {
-            if (wallImg.complete && wallImg.naturalWidth !== 0) {
-              ctx.drawImage(wallImg, x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const playerImg = document.getElementById("playerImg");
+        const wallImg = document.getElementById("wallImg");
+        const blockImg = document.getElementById("blockImg");
+        const bombImg = document.getElementById("bombImg");
+        const fireImg = document.getElementById("fireImg");
+
+        for (let y = 0; y < ROWS; y++) {
+          for (let x = 0; x < COLS; x++) {
+            const cell = grid[y][x];
+            if (cell === 1) {
+              if (wallImg.complete && wallImg.naturalWidth !== 0) {
+                ctx.drawImage(wallImg, x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+              } else {
+                ctx.fillStyle = "#666";
+                ctx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                console.warn("wall.png failed to load, using fallback color");
+              }
+            } else if (cell === 2) {
+              if (blockImg.complete) {
+                ctx.drawImage(blockImg, x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+              } else {
+                ctx.fillStyle = "#8B4513";
+                ctx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+              }
             } else {
-              ctx.fillStyle = "#666";
-              ctx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-              console.warn("wall.png failed to load, using fallback color");
-            }
-          } else if (cell === 2) {
-            if (blockImg.complete) {
-              ctx.drawImage(blockImg, x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-            } else {
-              ctx.fillStyle = "#8B4513";
+              ctx.fillStyle = "#000";
               ctx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
             }
-          } else {
-            ctx.fillStyle = "#000";
-            ctx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
           }
         }
-      }
 
-      bombs.forEach(b => {
-        if (bombImg.complete) {
-          ctx.drawImage(bombImg, b.x * TILE_SIZE, b.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-        } else {
-          ctx.fillStyle = "#ff0000";
-          ctx.fillRect(b.x * TILE_SIZE, b.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-        }
-      });
-
-      explosions.forEach(ex => {
-        if (fireImg.complete) {
-          ctx.drawImage(fireImg, ex.x * TILE_SIZE, ex.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-        } else {
-          ctx.fillStyle = "#ff6600";
-          ctx.fillRect(ex.x * TILE_SIZE, ex.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-        }
-      });
-
-      if (playerImg.complete) {
-        ctx.drawImage(playerImg, player.x * TILE_SIZE, player.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-      } else {
-        ctx.fillStyle = "#00ff00";
-        ctx.fillRect(player.x * TILE_SIZE, player.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-      }
-
-      const aiColors = ["#ff0000", "#ffff00", "#ff00ff"];
-      aiPlayers.forEach((ai, index) => {
-        if (ai.alive) {
-          if (playerImg.complete) {
-            ctx.globalAlpha = 0.7;
-            ctx.fillRect(ai.x * TILE_SIZE, ai.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-            ctx.globalAlpha = 1.0;
-            if (index == 0)
-              ctx.drawImage(aiplayer1Img, ai.x * TILE_SIZE, ai.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-            else if (index == 1)
-              ctx.drawImage(aiplayer2Img, ai.x * TILE_SIZE, ai.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-            else if (index == 2)
-              ctx.drawImage(aiplayer3Img, ai.x * TILE_SIZE, ai.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+        bombs.forEach((b) => {
+          if (bombImg.complete) {
+            ctx.drawImage(bombImg, b.x * TILE_SIZE, b.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
           } else {
-            ctx.fillStyle = aiColors[index];
-            ctx.fillRect(ai.x * TILE_SIZE, ai.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+            ctx.fillStyle = "#ff0000";
+            ctx.fillRect(b.x * TILE_SIZE, b.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
           }
-        }
-      });
-    }
+        });
 
-    function loop() {
-      if (gameState === "playing") {
-        update();
-        draw();
+        explosions.forEach((ex) => {
+          if (fireImg.complete) {
+            ctx.drawImage(fireImg, ex.x * TILE_SIZE, ex.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+          } else {
+            ctx.fillStyle = "#ff6600";
+            ctx.fillRect(ex.x * TILE_SIZE, ex.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+          }
+        });
+
+        if (playerImg.complete) {
+          ctx.drawImage(playerImg, player.x * TILE_SIZE, player.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+        } else {
+          ctx.fillStyle = "#00ff00";
+          ctx.fillRect(player.x * TILE_SIZE, player.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+        }
+
+        const aiColors = ["#ff0000", "#ffff00", "#ff00ff"];
+        aiPlayers.forEach((ai, index) => {
+          if (ai.alive) {
+            if (playerImg.complete) {
+              ctx.globalAlpha = 0.7;
+              ctx.fillRect(ai.x * TILE_SIZE, ai.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+              ctx.globalAlpha = 1.0;
+              if (index == 0) ctx.drawImage(aiplayer1Img, ai.x * TILE_SIZE, ai.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+              else if (index == 1)
+                ctx.drawImage(aiplayer2Img, ai.x * TILE_SIZE, ai.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+              else if (index == 2)
+                ctx.drawImage(aiplayer3Img, ai.x * TILE_SIZE, ai.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+            } else {
+              ctx.fillStyle = aiColors[index];
+              ctx.fillRect(ai.x * TILE_SIZE, ai.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+            }
+          }
+        });
       }
-      requestAnimationFrame(loop);
-    }
 
-    // Touch controls
-    const touchUp = document.getElementById("touchUp");
-    const touchDown = document.getElementById("touchDown");
-    const touchLeft = document.getElementById("touchLeft");
-    const touchRight = document.getElementById("touchRight");
-    const touchBomb = document.getElementById("touchBomb");
-
-    function startMove(direction) {
-      if (gameState !== "playing") return;
-      clearInterval(moveInterval);
-      moveInterval = setInterval(() => {
-        if (gameState !== "playing") {
-          clearInterval(moveInterval);
-          return;
+      function loop() {
+        if (gameState === "playing") {
+          update();
+          draw();
         }
-        let nx = player.x, ny = player.y;
-        switch (direction) {
-          case "up": ny--; break;
-          case "down": ny++; break;
-          case "left": nx--; break;
-          case "right": nx++; break;
+        requestAnimationFrame(loop);
+      }
+
+      // Touch controls
+      const touchUp = document.getElementById("touchUp");
+      const touchDown = document.getElementById("touchDown");
+      const touchLeft = document.getElementById("touchLeft");
+      const touchRight = document.getElementById("touchRight");
+      const touchBomb = document.getElementById("touchBomb");
+
+      function startMove(direction) {
+        if (gameState !== "playing") return;
+        clearInterval(moveInterval);
+        moveInterval = setInterval(() => {
+          if (gameState !== "playing") {
+            clearInterval(moveInterval);
+            return;
+          }
+          let nx = player.x,
+            ny = player.y;
+          switch (direction) {
+            case "up":
+              ny--;
+              break;
+            case "down":
+              ny++;
+              break;
+            case "left":
+              nx--;
+              break;
+            case "right":
+              nx++;
+              break;
+          }
+          if (nx >= 0 && nx < COLS && ny >= 0 && ny < ROWS && cellFree(nx, ny)) {
+            player.x = nx;
+            player.y = ny;
+          }
+        }, 50);
+      }
+
+      function stopMove() {
+        clearInterval(moveInterval);
+      }
+
+      function handleTouchStart(e, direction) {
+        e.preventDefault();
+        startMove(direction);
+      }
+
+      function handleTouchBomb(e) {
+        e.preventDefault();
+        if (gameState !== "playing") return;
+        placeBomb(player, -1);
+      }
+
+      touchUp.addEventListener("touchstart", (e) => handleTouchStart(e, "up"));
+      touchUp.addEventListener("touchend", stopMove);
+      touchUp.addEventListener("touchcancel", stopMove);
+
+      touchDown.addEventListener("touchstart", (e) => handleTouchStart(e, "down"));
+      touchDown.addEventListener("touchend", stopMove);
+      touchDown.addEventListener("touchcancel", stopMove);
+
+      touchLeft.addEventListener("touchstart", (e) => handleTouchStart(e, "left"));
+      touchLeft.addEventListener("touchend", stopMove);
+      touchLeft.addEventListener("touchcancel", stopMove);
+
+      touchRight.addEventListener("touchstart", (e) => handleTouchStart(e, "right"));
+      touchRight.addEventListener("touchend", stopMove);
+      touchRight.addEventListener("touchcancel", stopMove);
+
+      touchBomb.addEventListener("touchstart", handleTouchBomb);
+      touchBomb.addEventListener("touchend", (e) => e.preventDefault());
+      touchBomb.addEventListener("touchcancel", (e) => e.preventDefault());
+
+      document.addEventListener("keydown", (e) => {
+        if (gameState === "start" && e.key === "Enter") return startGame();
+        if (gameState !== "playing") return;
+        let nx = player.x,
+          ny = player.y;
+        switch (e.key) {
+          case "ArrowLeft":
+            nx--;
+            break;
+          case "ArrowRight":
+            nx++;
+            break;
+          case "ArrowUp":
+            ny--;
+            break;
+          case "ArrowDown":
+            ny++;
+            break;
+          case " ":
+            placeBomb(player, -1);
+            return;
+          default:
+            return;
         }
         if (nx >= 0 && nx < COLS && ny >= 0 && ny < ROWS && cellFree(nx, ny)) {
           player.x = nx;
           player.y = ny;
         }
-      }, 50);
-    }
-
-    function stopMove() {
-      clearInterval(moveInterval);
-    }
-
-    function handleTouchStart(e, direction) {
-      e.preventDefault();
-      startMove(direction);
-    }
-
-    function handleTouchBomb(e) {
-      e.preventDefault();
-      if (gameState !== "playing") return;
-      placeBomb(player, -1);
-    }
-
-    touchUp.addEventListener("touchstart", (e) => handleTouchStart(e, "up"));
-    touchUp.addEventListener("touchend", stopMove);
-    touchUp.addEventListener("touchcancel", stopMove);
-
-    touchDown.addEventListener("touchstart", (e) => handleTouchStart(e, "down"));
-    touchDown.addEventListener("touchend", stopMove);
-    touchDown.addEventListener("touchcancel", stopMove);
-
-    touchLeft.addEventListener("touchstart", (e) => handleTouchStart(e, "left"));
-    touchLeft.addEventListener("touchend", stopMove);
-    touchLeft.addEventListener("touchcancel", stopMove);
-
-    touchRight.addEventListener("touchstart", (e) => handleTouchStart(e, "right"));
-    touchRight.addEventListener("touchend", stopMove);
-    touchRight.addEventListener("touchcancel", stopMove);
-
-    touchBomb.addEventListener("touchstart", handleTouchBomb);
-    touchBomb.addEventListener("touchend", (e) => e.preventDefault());
-    touchBomb.addEventListener("touchcancel", (e) => e.preventDefault());
-
-    document.addEventListener("keydown", e => {
-      if (gameState === "start" && e.key === "Enter") return startGame();
-      if (gameState !== "playing") return;
-      let nx = player.x, ny = player.y;
-      switch (e.key) {
-        case "ArrowLeft": nx--; break;
-        case "ArrowRight": nx++; break;
-        case "ArrowUp": ny--; break;
-        case "ArrowDown": ny++; break;
-        case " ": placeBomb(player, -1); return;
-        default: return;
-      }
-      if (nx >= 0 && nx < COLS && ny >= 0 && ny < ROWS && cellFree(nx, ny)) {
-        player.x = nx; player.y = ny;
-      }
-    });
-
-    function selectDevice(device) {
-      isPhone = device === 'phone';
-      document.getElementById("deviceScreen").style.display = "none";
-      document.getElementById("startScreen").style.display = "block";
-      gameState = "start";
-    }
-
-    function startGame() {
-      score = 0;
-      aiScores = [0, 0, 0];
-      lives = 3;
-      level = 1;
-      bombs = [];
-      explosions = [];
-      buildLevel();
-      initPlayer();
-      document.getElementById("startScreen").style.display = "none";
-      document.getElementById("gameOverScreen").style.display = "none";
-      if (isPhone) {
-        document.getElementById("touch-controls").style.display = "flex";
-      }
-      document.getElementById("level").textContent = level;
-      gameState = "playing";
-      const bgm = document.getElementById("bgm");
-      bgm.currentTime = 3;
-      bgm.play().catch(e => console.error("Background music failed:", e));
-      window.FarcadeSDK?.singlePlayer.actions.ready();
-    }
-
-    function endGame() {
-      gameState = "gameover";
-      document.getElementById("touch-controls").style.display = "none";
-      const highScore = localStorage.getItem("highScore") || 0;
-      if (score > highScore) localStorage.setItem("highScore", score);
-      document.getElementById("finalLevel").textContent = level;
-      document.getElementById("finalScore").textContent = score;
-      document.getElementById("finalAI1").textContent = aiScores[0];
-      document.getElementById("finalAI2").textContent = aiScores[1];
-      document.getElementById("finalAI3").textContent = aiScores[2];
-      document.getElementById("finalHighScore").textContent = Math.max(score, highScore);
-      const allScores = [score, ...aiScores];
-      const maxScore = Math.max(...allScores);
-      const winners = [];
-      if (score === maxScore) winners.push("YOU");
-      aiScores.forEach((s, i) => {
-        if (s === maxScore) winners.push(`AI${i+1}`);
       });
-      let winText = winners.length > 1 ? `TIE: ${winners.join(", ")}` : `${winners[0]} WIN!`;
-      if (lives <= 0) 
-        winText = 'You LOSE';
-      document.getElementById("overText").textContent = winText;
-      document.getElementById("gameOverScreen").style.display = "block";
-      document.getElementById("bgm").pause();
-      window.FarcadeSDK?.singlePlayer.actions.gameOver({ score });
-    }
 
-    function restart() {
-      if (gameState !== "gameover") return;
-      document.getElementById("gameOverScreen").style.display = "none";
-      document.getElementById("deviceScreen").style.display = "block";
-      document.getElementById("startScreen").style.display = "none";
-      document.getElementById("touch-controls").style.display = "none";
-      gameState = "device";
-    }
-
-    function resizeCanvas() {
-      const container = document.querySelector(".game-container");
-      const rect = container.getBoundingClientRect();
-      const aspectRatio = 8 / 13;
-      let width = rect.width;
-      let height = width / aspectRatio;
-      
-      if (height > rect.height) {
-        height = rect.height;
-        width = height * aspectRatio;
+      function selectDevice(device) {
+        isPhone = device === "phone";
+        document.getElementById("deviceScreen").style.display = "none";
+        document.getElementById("startScreen").style.display = "block";
+        gameState = "start";
       }
-      
-      canvas.style.width = `${width}px`;
-      canvas.style.height = `${height}px`;
-    }
 
-    function loadSprites(callback) {
-      const ids = ["playerImg", "wallImg", "blockImg", "bombImg", "fireImg", "aiplayer1Img", "aiplayer2Img", "aiplayer3Img"];
-      let loaded = 0;
-      ids.forEach(id => {
-        const img = document.getElementById(id);
-        img.onerror = () => {
-          console.error(`Failed to load image: ${id}`);
-          if (++loaded === ids.length) callback();
-        };
-        if (img.complete && img.naturalWidth !== 0) {
-          if (++loaded === ids.length) callback();
-        } else {
-          img.onload = () => {
+      let timerInterval;
+      //start timer
+      function startTimer() {
+        clearInterval(timerInterval);
+        // timeLeft = Math.floor(45 * Math.pow(level, 1.75));
+        timeLeft = 60;
+        timerInterval = setInterval(() => {
+          timeLeft--;
+          timeDisplay.textContent = timeLeft;
+          if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            // gameOver();
+            gameState = "gameover";
+            endGame();
+          }
+        }, 800);
+      }
+
+      function startGame() {
+        startTimer();
+        score = 0;
+        aiScores = [0, 0, 0];
+        lives = 3;
+        level = 1;
+        bombs = [];
+        explosions = [];
+        buildLevel();
+        initPlayer();
+        document.getElementById("startScreen").style.display = "none";
+        document.getElementById("gameOverScreen").style.display = "none";
+        if (isPhone) {
+          document.getElementById("touch-controls").style.display = "flex";
+        }
+        document.getElementById("level").textContent = level;
+        gameState = "playing";
+        const bgm = document.getElementById("bgm");
+        bgm.currentTime = 3;
+        bgm.play().catch((e) => console.error("Background music failed:", e));
+        window.FarcadeSDK?.singlePlayer.actions.ready();
+      }
+
+      function endGame() {
+        gameState = "gameover";
+        document.getElementById("touch-controls").style.display = "none";
+        const highScore = localStorage.getItem("highScore") || 0;
+        if (score > highScore) localStorage.setItem("highScore", score);
+        document.getElementById("finalLevel").textContent = level;
+        document.getElementById("finalScore").textContent = score;
+        // document.getElementById("finalAI1").textContent = aiScores[0];
+        // document.getElementById("finalAI2").textContent = aiScores[1];
+        // document.getElementById("finalAI3").textContent = aiScores[2];
+        document.getElementById("finalHighScore").textContent = Math.max(score, highScore);
+        const allScores = [score, ...aiScores];
+        const maxScore = Math.max(...allScores);
+        const winners = [];
+        if (score === maxScore) winners.push("YOU");
+        aiScores.forEach((s, i) => {
+          if (s === maxScore) winners.push(`AI${i + 1}`);
+        });
+        // let winText = winners.length > 1 ? `TIE: ${winners.join(", ")}` : `${winners[0]} WIN!`;
+        if (lives <= 0) winText = "You LOSE";
+        else winText = "YOU WIN";
+        document.getElementById("overText").textContent = winText;
+        document.getElementById("gameOverScreen").style.display = "block";
+        document.getElementById("bgm").pause();
+        window.FarcadeSDK?.singlePlayer.actions.gameOver({ score });
+      }
+
+      function restart() {
+        if (gameState !== "gameover") return;
+        document.getElementById("gameOverScreen").style.display = "none";
+        document.getElementById("deviceScreen").style.display = "block";
+        document.getElementById("startScreen").style.display = "none";
+        document.getElementById("touch-controls").style.display = "none";
+        gameState = "device";
+      }
+
+      function resizeCanvas() {
+        const container = document.querySelector(".game-container");
+        const rect = container.getBoundingClientRect();
+        const aspectRatio = 8 / 13;
+        let width = rect.width;
+        let height = width / aspectRatio;
+
+        if (height > rect.height) {
+          height = rect.height;
+          width = height * aspectRatio;
+        }
+
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
+      }
+
+      function loadSprites(callback) {
+        const ids = [
+          "playerImg",
+          "wallImg",
+          "blockImg",
+          "bombImg",
+          "fireImg",
+          "aiplayer1Img",
+          "aiplayer2Img",
+          "aiplayer3Img",
+        ];
+        let loaded = 0;
+        ids.forEach((id) => {
+          const img = document.getElementById(id);
+          img.onerror = () => {
+            console.error(`Failed to load image: ${id}`);
             if (++loaded === ids.length) callback();
           };
-        }
+          if (img.complete && img.naturalWidth !== 0) {
+            if (++loaded === ids.length) callback();
+          } else {
+            img.onload = () => {
+              if (++loaded === ids.length) callback();
+            };
+          }
+        });
+      }
+
+      window.addEventListener("resize", resizeCanvas);
+      resizeCanvas();
+
+      loadSprites(() => {
+        requestAnimationFrame(loop);
       });
-    }
 
-    window.addEventListener("resize", resizeCanvas);
-    resizeCanvas();
+      window.FarcadeSDK?.on?.("play_again", () => {
+        document.getElementById("gameOverScreen").style.display = "none";
+        document.getElementById("deviceScreen").style.display = "block";
+        document.getElementById("startScreen").style.display = "none";
+        document.getElementById("touch-controls").style.display = "none";
+        gameState = "device";
+      });
 
-    loadSprites(() => {
-      requestAnimationFrame(loop);
-    });
-
-    window.FarcadeSDK?.on?.("play_again", () => {
-      document.getElementById("gameOverScreen").style.display = "none";
-      document.getElementById("deviceScreen").style.display = "block";
-      document.getElementById("startScreen").style.display = "none";
-      document.getElementById("touch-controls").style.display = "none";
-      gameState = "device";
-    });
-
-    window.FarcadeSDK?.on?.("toggle_mute", () => {
-      const bgm = document.getElementById("bgm");
-      if (bgm) bgm.muted = !bgm.muted;
-    });
-
-    document.addEventListener("keydown", e => {
-      if (e.key === "m" || e.key === "M") {
+      window.FarcadeSDK?.on?.("toggle_mute", () => {
         const bgm = document.getElementById("bgm");
         if (bgm) bgm.muted = !bgm.muted;
-      }
-    });
+      });
 
-    document.getElementById("highScore").textContent = localStorage.getItem("highScore") || 0;
-  </script>
-</body>
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "m" || e.key === "M") {
+          const bgm = document.getElementById("bgm");
+          if (bgm) bgm.muted = !bgm.muted;
+        }
+      });
+
+      document.getElementById("highScore").textContent = localStorage.getItem("highScore") || 0;
+    </script>
+  </body>
 </html>
+
