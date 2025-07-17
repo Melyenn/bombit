@@ -219,7 +219,7 @@
           Level: <span id="level">1</span> | Lives: <span id="lives">3</span> | Player: <span id="score">0</span> |
           Time: <span id="time">0</span>s
           <p class="ai">
-            AI1 Lives: <span id="ai1Lives">1</span> | AI2 Lives: <span id="ai2Lives">1</span> | AI3 Lives: <span id="ai3Lives">1</span> 
+            AI1 Lives: <span id="ai1Lives">1</span> | AI2 Lives: <span id="ai2Lives">1</span> | AI3 Lives: <span id="ai3Lives">1</span>
           </p>
           <p>
             | High: <span id="highScore">0</span>
@@ -278,6 +278,7 @@
       let moveInterval = null;
       let isPhone = false;
       let boomAudio = null;
+      let newLevelAudio = null;
 
       // Ensure initial screen states
       document.getElementById("deviceScreen").style.display = "block";
@@ -296,12 +297,35 @@
           console.warn("Failed to load explosion audio");
           boomAudio.isReady = false;
         };
+
+        newLevelAudio = document.getElementById("newlv");
+        newLevelAudio.load();
+        newLevelAudio.oncanplaythrough = () => {
+          newLevelAudio.isReady = true;
+        };
+        newLevelAudio.onerror = () => {
+          console.warn("Failed to load new level audio");
+          newLevelAudio.isReady = false;
+        };
       }
 
       function playExplosionSound() {
         if (boomAudio && boomAudio.isReady) {
           boomAudio.currentTime = 0; // Reset to start
           boomAudio.play().catch((e) => console.warn("Explosion sound failed to play:", e));
+        }
+      }
+
+      function playNewLevelSound() {
+        if (newLevelAudio && newLevelAudio.isReady) {
+          const bgm = document.getElementById("bgm");
+          bgm.pause(); // Pause background music
+          newLevelAudio.currentTime = 0; // Reset to start
+          newLevelAudio.play().catch((e) => console.warn("New level sound failed to play:", e));
+          // Resume background music after new level sound finishes
+          newLevelAudio.onended = () => {
+            bgm.play().catch((e) => console.error("Background music failed to resume:", e));
+          };
         }
       }
 
@@ -329,10 +353,24 @@
             } else if (Math.random() < blockDensity) grid[y][x] = 2;
           }
         }
+        // Clear spaces for player and AI
         grid[1][1] = grid[1][2] = grid[2][1] = 0;
         grid[ROWS - 2][COLS - 2] = grid[ROWS - 2][COLS - 3] = grid[ROWS - 3][COLS - 2] = 0;
         grid[1][COLS - 2] = grid[1][COLS - 3] = grid[2][COLS - 2] = 0;
         grid[ROWS - 2][1] = grid[ROWS - 2][2] = grid[ROWS - 3][1] = 0;
+
+        // Debug: Verify grid integrity
+        const playerPositions = [
+          { x: 1, y: 1 }, // Player
+          { x: COLS - 2, y: ROWS - 2 }, // AI 1
+          { x: COLS - 2, y: 1 }, // AI 2
+          { x: 1, y: ROWS - 2 }, // AI 3
+        ];
+        playerPositions.forEach((pos, index) => {
+          if (grid[pos.y][pos.x] !== 0) {
+            console.warn(`Invalid grid state: Position (${pos.x}, ${pos.y}) for ${index === 0 ? 'player' : `AI${index}`} is ${grid[pos.y][pos.x]}`);
+          }
+        });
       }
 
       function initPlayer() {
@@ -357,6 +395,7 @@
       }
 
       function levelUp() {
+        timeLeft = 60;
         level++;
         bombs = [];
         explosions = [];
@@ -366,9 +405,7 @@
         document.getElementById("ai1Lives").textContent = aiPlayers[0].lives;
         document.getElementById("ai2Lives").textContent = aiPlayers[1].lives;
         document.getElementById("ai3Lives").textContent = aiPlayers[2].lives;
-        const bgm = document.getElementById("bgm");
-        bgm.currentTime = 3;
-        bgm.play().catch((e) => console.error("Background music failed:", e));
+        playNewLevelSound(); // Play level-up sound
       }
 
       function triggerExplosion(bomb) {
@@ -828,7 +865,6 @@
       }
 
       function endGame(isWin) {
-        document.getElementById("bgm").pause();
         gameState = "gameover";
         document.getElementById("touch-controls").style.display = "none";
         const highScore = localStorage.getItem("highScore") || 0;
@@ -841,6 +877,7 @@
         document.getElementById("finalHighScore").textContent = Math.max(score, highScore);
         document.getElementById("overText").textContent = isWin ? "YOU WIN!" : "GAME OVER";
         document.getElementById("gameOverScreen").style.display = "block";
+        document.getElementById("bgm").pause();
         window.FarcadeSDK?.singlePlayer.actions.gameOver({ score });
       }
 
@@ -917,6 +954,7 @@
         const bgm = document.getElementById("bgm");
         if (bgm) bgm.muted = !bgm.muted;
         if (boomAudio) boomAudio.muted = !boomAudio.muted;
+        if (newLevelAudio) newLevelAudio.muted = !newLevelAudio.muted;
       });
 
       document.addEventListener("keydown", (e) => {
@@ -924,6 +962,7 @@
           const bgm = document.getElementById("bgm");
           if (bgm) bgm.muted = !bgm.muted;
           if (boomAudio) boomAudio.muted = !boomAudio.muted;
+          if (newLevelAudio) newLevelAudio.muted = !newLevelAudio.muted;
         }
       });
 
