@@ -279,6 +279,7 @@
       let isPhone = false;
       let boomAudio = null;
       let newLevelAudio = null;
+      let lastTime = performance.now();
 
       // Ensure initial screen states
       document.getElementById("deviceScreen").style.display = "block";
@@ -311,7 +312,7 @@
 
       function playExplosionSound() {
         if (boomAudio && boomAudio.isReady) {
-          boomAudio.currentTime = 0; // Reset to start
+          boomAudio.currentTime = 0;
           boomAudio.play().catch((e) => console.warn("Explosion sound failed to play:", e));
         }
       }
@@ -319,10 +320,9 @@
       function playNewLevelSound() {
         if (newLevelAudio && newLevelAudio.isReady) {
           const bgm = document.getElementById("bgm");
-          bgm.pause(); // Pause background music
-          newLevelAudio.currentTime = 0; // Reset to start
+          bgm.pause();
+          newLevelAudio.currentTime = 0;
           newLevelAudio.play().catch((e) => console.warn("New level sound failed to play:", e));
-          // Resume background music after new level sound finishes
           newLevelAudio.onended = () => {
             bgm.play().catch((e) => console.error("Background music failed to resume:", e));
           };
@@ -340,7 +340,7 @@
       }
       function playerAt(x, y) {
         if (player.x === x && player.y === y) return true;
-        return aiPlayers.some((ai) => ai.x === x && ai.y === y);
+        return aiPlayers.some((ai) =>(ai.alives) && (ai.x === x && ai.y === y));
       }
 
       function buildLevel() {
@@ -353,18 +353,16 @@
             } else if (Math.random() < blockDensity) grid[y][x] = 2;
           }
         }
-        // Clear spaces for player and AI
         grid[1][1] = grid[1][2] = grid[2][1] = 0;
         grid[ROWS - 2][COLS - 2] = grid[ROWS - 2][COLS - 3] = grid[ROWS - 3][COLS - 2] = 0;
         grid[1][COLS - 2] = grid[1][COLS - 3] = grid[2][COLS - 2] = 0;
         grid[ROWS - 2][1] = grid[ROWS - 2][2] = grid[ROWS - 3][1] = 0;
 
-        // Debug: Verify grid integrity
         const playerPositions = [
-          { x: 1, y: 1 }, // Player
-          { x: COLS - 2, y: ROWS - 2 }, // AI 1
-          { x: COLS - 2, y: 1 }, // AI 2
-          { x: 1, y: ROWS - 2 }, // AI 3
+          { x: 1, y: 1 },
+          { x: COLS - 2, y: ROWS - 2 },
+          { x: COLS - 2, y: 1 },
+          { x: 1, y: ROWS - 2 },
         ];
         playerPositions.forEach((pos, index) => {
           if (grid[pos.y][pos.x] !== 0) {
@@ -376,7 +374,7 @@
       function initPlayer() {
         player = { x: 1, y: 1 };
         const aiMoveSpeed = Math.max(10, 15 - level);
-        const aiLives = Math.min(level, 3); // AI lives increase with level, capped at 3
+        const aiLives = Math.min(level, 3);
         aiPlayers = [
           { x: COLS - 2, y: ROWS - 2, moveTimer: 0, bombTimer: 0, target: null, id: 0, alive: true, lives: aiLives },
           { x: COLS - 2, y: 1, moveTimer: 0, bombTimer: 0, target: null, id: 1, alive: true, lives: aiLives },
@@ -405,7 +403,7 @@
         document.getElementById("ai1Lives").textContent = aiPlayers[0].lives;
         document.getElementById("ai2Lives").textContent = aiPlayers[1].lives;
         document.getElementById("ai3Lives").textContent = aiPlayers[2].lives;
-        playNewLevelSound(); // Play level-up sound
+        playNewLevelSound();
       }
 
       function triggerExplosion(bomb) {
@@ -424,16 +422,15 @@
             cells.push({ x: nx, y: ny });
             if (grid[ny][nx] === 2) {
               grid[ny][nx] = 0;
-              score += 10; // Award points for breaking blocks
+              score += 10;
               break;
             }
           }
         }
-        // Check if explosion hits AI players
         aiPlayers.forEach((ai) => {
           if (ai.alive && ai.lives > 0 && cells.some((cell) => cell.x === ai.x && cell.y === ai.y)) {
             if (bomb.owner === "player") {
-              score += 50; // Award points if player's bomb hits AI
+              score += 50;
             }
           }
         });
@@ -470,19 +467,18 @@
         return moves;
       }
 
-      function updateAI() {
+      function updateAI(deltaTime) {
         if (gameState !== "playing") return;
 
         const aiMoveSpeed = Math.max(10, 15 - level);
         aiPlayers.forEach((ai, index) => {
           if (!ai.alive || ai.lives <= 0) return;
 
-          ai.moveTimer--;
-          ai.bombTimer--;
+          ai.moveTimer -= deltaTime * 60;
+          ai.bombTimer -= deltaTime * 60;
 
           if (ai.moveTimer <= 0) {
-            ai.moveTimer = aiMoveSpeed + Math.random() * 10 + index * 3;
-
+            ai.moveTimer = (aiMoveSpeed + Math.random() * 10 + index * 3);
             let shouldEscape = false;
             for (const bomb of bombs) {
               const dist = Math.abs(bomb.x - ai.x) + Math.abs(bomb.y - ai.y);
@@ -559,28 +555,34 @@
         });
       }
 
-      function tickBombs() {
+      function tickBombs(deltaTime) {
         for (const bomb of bombs) {
-          bomb.timer--;
-          if (bomb.timer === 0) triggerExplosion(bomb);
+          bomb.timer -= deltaTime * 60;
+          if (bomb.timer <= 0) triggerExplosion(bomb);
         }
         bombs = bombs.filter((b) => b.timer > 0);
       }
 
-      function tickExplosions() {
-        explosions.forEach((ex) => ex.timer--);
+      function tickExplosions(deltaTime) {
+        explosions.forEach((ex) => (ex.timer -= deltaTime * 60));
         explosions = explosions.filter((ex) => ex.timer > 0);
         if (checkWin()) {
-          levelUp(); // Proceed to next level when all AI players are defeated
+          levelUp();
         }
       }
 
-      function update() {
+      function update(deltaTime) {
         if (gameState !== "playing") return;
 
-        updateAI();
-        tickBombs();
-        tickExplosions();
+        timeLeft -= deltaTime;
+        timeDisplay.textContent = Math.max(0, Math.floor(timeLeft));
+        if (timeLeft <= 0) {
+          endGame(false);
+        }
+
+        updateAI(deltaTime);
+        tickBombs(deltaTime);
+        tickExplosions(deltaTime);
 
         if (explosionAt(player.x, player.y)) {
           playExplosionSound();
@@ -708,8 +710,12 @@
       }
 
       function loop() {
+        const currentTime = performance.now();
+        const deltaTime = (currentTime - lastTime) / 1000; // Convert to seconds
+        lastTime = currentTime;
+
         if (gameState === "playing") {
-          update();
+          update(deltaTime);
           draw();
         }
         requestAnimationFrame(loop);
@@ -825,18 +831,9 @@
         gameState = "start";
       }
 
-      let timerInterval;
       function startTimer() {
-        clearInterval(timerInterval);
         timeLeft = 60;
-        timerInterval = setInterval(() => {
-          timeLeft--;
-          timeDisplay.textContent = timeLeft;
-          if (timeLeft <= 0) {
-            clearInterval(timerInterval);
-            endGame(false);
-          }
-        }, 800);
+        timeDisplay.textContent = timeLeft;
       }
 
       function startGame() {
